@@ -1,0 +1,40 @@
+sudo: false
+language: php
+cache:
+  directories:
+  - vendor
+  - $HOME/.composer/cache
+matrix:
+  include:
+  - php: 7.1
+    env: PHPLINT=1 COVERAGE=1
+  - php: 7.0
+  allow_failures:
+  - php: nightly
+before_script:
+- composer self-update
+- composer install
+script:
+- |
+  if [[ "$PHPLINT" == "1" ]]; then
+    find -L .  -path ./vendor -prune -o -name '*.php' -print0 | xargs -0 -n 1 -P 4 php -l
+  fi
+- |
+  if [[ -z "$CODECLIMATE_REPO_TOKEN" ]]; then
+    COVERAGE="0"
+  fi
+- |
+  if [[ "$COVERAGE" == "1" ]]; then
+    mkdir -p build/logs
+    vendor/bin/phpunit -c phpunit.xml --coverage-clover build/logs/clover.xml
+    vendor/bin/test-reporter;
+  else
+    vendor/bin/phpunit -c phpunit.xml
+  fi
+notifications:
+  email: false
+  slack:
+    rooms:
+      secure: 2aAzIv+JYbeICK1K+4njqizMcu3m9WIKvbDf776Ibpm5A9gAWSi8b67dTJYSz6y1JwRJqOkHZbhx2JbM8O/DbacSpKayHKBBuW22tC96Mnr5uLAsLaPK1jHMI9AU4LMVcquUTzT8YZbXG3f71b+gLg0NLeCbHfLhCrvJBY3ODjY2Q1creb7z2q86Xffs9gDwfEuYmGLjJzC8F335e7cYhK/vHNcuSXQqFedGyibxaB+VNFHp0sbK9JGzvQ7FXeZvNq2Q6lyTM+7cVQt7lBAicv9V+nB6WP4foqyhx/cf3UUD32CogDA9SRk89T98GL79Y85WEIEcXEo+w2ZuLa3YqFDfuxTPnl6ek9x1wwHz9B89zGkswnLSXbhtbE1OSh5WwsOSsDZRhS/OyCt57yi9xhXE7lHJPA15Du2p/vDpPbMELFDpVOdtfKHjDwYGnEYqG8Z1opszaYDgABDvE8/1Og0DlU4wFaWX91VYaMnt6nwirzb59I6d76p7hFCrtbeCXW2INSnuE8zWZg2EjAiJnjy+O0+vetpsJ5okOQJokkzTfwFMOIP94MInckGd2fF5uWukKp44gT5jIKpjdFEeJ4/9r6W430qXKFgXtg+9GY6N/ish9K3Z3HtyszWDsrcCYnvr4957TRYY3247x5/+cuFFe9azrdI96iEkeXmkqjI=
+    on_success: change
+    on_failure: always
